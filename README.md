@@ -10,3 +10,8 @@ This repo is a **demo scaffold** for privacy-preserving distributed analytics ac
 - **Communication protocol (REST):**
   - `POST /submit_update` for silo → coordinator
   - `GET /aggregate` to retrieve aggregate once all silos submitted
+
+## Folder structure
+- `common/cryptography.py` — secure masking + DP utilities
+- `coordinator/app.py` — FastAPI coordinator
+- `silo-node/client-logic.py` — silo client that generates local update, adds DP, masks, sends
