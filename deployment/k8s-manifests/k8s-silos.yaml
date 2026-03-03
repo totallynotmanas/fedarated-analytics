@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silo1
+  labels:
+    app: silo1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silo1
+  template:
+    metadata:
+      labels:
+        app: silo1
+    spec:
+      containers:
+      - name: silo1
+        image: silo-node:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_ID
+          value: "SILO_1"
+        - name: COORDINATOR_URL
+          value: "http://coordinator:8000"
+        - name: PEERS
+          value: "SILO_1,SILO_2,SILO_3"
+        - name: SHARED_SECRET
+          value: "class-demo-secret"
+        - name: ROUND
+          value: "1"
+        - name: UPDATE_DIM
+          value: "20"
+        - name: DP_ENABLED
+          value: "true"
+        - name: DP_L2_CLIP
+          value: "1.0"
+        - name: DP_NOISE_MULT
+          value: "0.3"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silo2
+  labels:
+    app: silo2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silo2
+  template:
+    metadata:
+      labels:
+        app: silo2
+    spec:
+      containers:
+      - name: silo2
+        image: silo-node:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_ID
+          value: "SILO_2"
+        - name: COORDINATOR_URL
+          value: "http://coordinator:8000"
+        - name: PEERS
+          value: "SILO_1,SILO_2,SILO_3"
+        - name: SHARED_SECRET
+          value: "class-demo-secret"
+        - name: ROUND
+          value: "1"
+        - name: UPDATE_DIM
+          value: "20"
+        - name: DP_ENABLED
+          value: "true"
+        - name: DP_L2_CLIP
+          value: "1.0"
+        - name: DP_NOISE_MULT
+          value: "0.3"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silo3
+  labels:
+    app: silo3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silo3
+  template:
+    metadata:
+      labels:
+        app: silo3
+    spec:
+      containers:
+      - name: silo3
+        image: silo-node:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_ID
+          value: "SILO_3"
+        - name: COORDINATOR_URL
+          value: "http://coordinator:8000"
+        - name: PEERS
+          value: "SILO_1,SILO_2,SILO_3"
+        - name: SHARED_SECRET
+          value: "class-demo-secret"
+        - name: ROUND
+          value: "1"
+        - name: UPDATE_DIM
+          value: "20"
+        - name: DP_ENABLED
+          value: "true"
+        - name: DP_L2_CLIP
+          value: "1.0"
+        - name: DP_NOISE_MULT
+          value: "0.3"
