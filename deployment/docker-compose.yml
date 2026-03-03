@@ -1,0 +1,64 @@
+services:
+  coordinator:
+    build:
+      context: ..
+      dockerfile: coordinator/Dockerfile
+    container_name: coordinator
+    environment:
+      - EXPECTED_NODES=3
+    ports:
+      - "8000:8000"
+
+  silo1:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo1
+    depends_on:
+      - coordinator
+    environment:
+      - NODE_ID=SILO_1
+      - COORDINATOR_URL=http://coordinator:8000
+      - PEERS=SILO_1,SILO_2,SILO_3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
+
+  silo2:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo2
+    depends_on:
+      - coordinator
+    environment:
+      - NODE_ID=SILO_2
+      - COORDINATOR_URL=http://coordinator:8000
+      - PEERS=SILO_1,SILO_2,SILO_3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
+
+  silo3:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo3
+    depends_on:
+      - coordinator
+    environment:
+      - NODE_ID=SILO_3
+      - COORDINATOR_URL=http://coordinator:8000
+      - PEERS=SILO_1,SILO_2,SILO_3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
