@@ -13,7 +13,7 @@ Implements:
 
 This module is intentionally minimal and readable for coursework demos.
 
-⚠️ Not production-secure. For real deployments you need:
+Not production-secure. For real deployments you need:
 - authenticated key exchange (e.g., ECDH),
 - dropout-resilient secure aggregation,
 - secure enclaves / MPC frameworks,
