@@ -45,6 +45,27 @@ def main():
         seed=DP_SEED,
     )
 
+    # 0) Initial Handshake with Coordinator (5-second retry loop)
+    health_url = f"{COORDINATOR_URL}/health"
+    print(f"[{NODE_ID}] Attempting initial handshake with Coordinator at {health_url}")
+    connected = False
+    for attempt in range(1, 13): # 12 attempts * 5 seconds = 60 seconds max wait
+        try:
+            r = requests.get(health_url, timeout=5)
+            if r.status_code == 200:
+                print(f"[{NODE_ID}] Handshake successful! Coordinator is ready.")
+                connected = True
+                break
+            else:
+                print(f"[{NODE_ID}] Coordinator returned status {r.status_code}. Retrying in 5 seconds...")
+        except requests.exceptions.RequestException as e:
+            print(f"[{NODE_ID}] Handshake attempt {attempt} failed: {e}. Retrying in 5 seconds...")
+        
+        time.sleep(5.0)
+
+    if not connected:
+        print(f"[{NODE_ID}] Could not connect to Coordinator after multiple attempts. Proceeding anyway, but may fail.")
+
     # 1) Local compute (toy)
     local_update = simulate_local_update(NODE_ID, UPDATE_DIM)
     dp_update = apply_dp(local_update, cfg)

@@ -1,0 +1,77 @@
+services:
+  coordinator:
+    build:
+      context: ..
+      dockerfile: coordinator/Dockerfile
+    container_name: coordinator
+    # Override command to run on port 5000
+    command: ["uvicorn", "coordinator.app:app", "--host", "0.0.0.0", "--port", "5000"]
+    environment:
+      - EXPECTED_NODES=3
+      - PORT=5000
+    ports:
+      - "5000:5000"
+    healthcheck:
+      # Use Python's built-in urllib to check the health endpoint, since curl might not be in the slim image
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  silo_a1:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo_a1
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_A1
+      - COORDINATOR_URL=http://coordinator:5000
+      - PEERS=Silo_A1,Silo_A2,Silo_A3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
+
+  silo_a2:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo_a2
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_A2
+      - COORDINATOR_URL=http://coordinator:5000
+      - PEERS=Silo_A1,Silo_A2,Silo_A3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
+
+  silo_a3:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: silo_a3
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_A3
+      - COORDINATOR_URL=http://coordinator:5000
+      - PEERS=Silo_A1,Silo_A2,Silo_A3
+      - SHARED_SECRET=class-demo-secret
+      - ROUND=1
+      - UPDATE_DIM=20
+      - DP_ENABLED=true
+      - DP_L2_CLIP=1.0
+      - DP_NOISE_MULT=0.3
