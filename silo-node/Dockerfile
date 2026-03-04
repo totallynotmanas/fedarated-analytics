@@ -5,4 +5,5 @@ COPY . /app
 
 RUN pip install --no-cache-dir numpy requests
 
+ENV PYTHONPATH=/app
 CMD ["python", "silo-node/client-logic.py"]
