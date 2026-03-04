@@ -6,7 +6,7 @@ services:
     container_name: silo_b1
     environment:
       - NODE_ID=Silo_B1
-      - COORDINATOR_URL=http://10.104.109.87:5000
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-10.12.227.115}:5000
       - PEERS=Silo_A1,Silo_A2,Silo_A3,Silo_B1,Silo_B2,Silo_B3
       - SHARED_SECRET=class-demo-secret
       - ROUND=1
@@ -24,7 +24,7 @@ services:
     container_name: silo_b2
     environment:
       - NODE_ID=Silo_B2
-      - COORDINATOR_URL=http://10.104.109.87:5000
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-10.12.227.115}:5000
       - PEERS=Silo_A1,Silo_A2,Silo_A3,Silo_B1,Silo_B2,Silo_B3
       - SHARED_SECRET=class-demo-secret
       - ROUND=1
@@ -42,7 +42,7 @@ services:
     container_name: silo_b3
     environment:
       - NODE_ID=Silo_B3
-      - COORDINATOR_URL=http://10.104.109.87:5000
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-10.12.227.115}:5000
       - PEERS=Silo_A1,Silo_A2,Silo_A3,Silo_B1,Silo_B2,Silo_B3
       - SHARED_SECRET=class-demo-secret
       - ROUND=1
