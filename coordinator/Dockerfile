@@ -1,9 +1,10 @@
-FROM python:3.11-slim
+FROM tff-base:latest
 
 WORKDIR /app
 COPY . /app
 
-RUN pip install --no-cache-dir fastapi uvicorn numpy pydantic
+# Only install the lightweight coordinator-specific packages
+RUN pip install --no-cache-dir fastapi uvicorn pydantic
 
-EXPOSE 8000
-CMD ["uvicorn", "coordinator.app:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 5000
+CMD ["uvicorn", "coordinator.app:app", "--host", "0.0.0.0", "--port", "5000"]

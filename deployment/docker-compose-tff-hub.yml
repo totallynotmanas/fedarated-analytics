@@ -1,0 +1,62 @@
+services:
+  coordinator:
+    build:
+      context: ..
+      dockerfile: coordinator/Dockerfile
+    container_name: tff_coordinator
+    # Exposing REST registration on port 5000
+    command: ["uvicorn", "coordinator.app:app", "--host", "0.0.0.0", "--port", "5000"]
+    environment:
+      - EXPECTED_NODES=3
+      - PORT=5000
+      - NUM_ROUNDS=5
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  silo_healthcare:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_healthcare
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_Healthcare
+      - DOMAIN=Healthcare
+      - COORDINATOR_URL=http://coordinator:5000
+      - GRPC_PORT=8000
+
+  silo_finance:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_finance
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_Finance
+      - DOMAIN=Finance
+      - COORDINATOR_URL=http://coordinator:5000
+      - GRPC_PORT=8000
+
+  silo_retail:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_retail
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - NODE_ID=Silo_Retail
+      - DOMAIN=Retail
+      - COORDINATOR_URL=http://coordinator:5000
+      - GRPC_PORT=8000

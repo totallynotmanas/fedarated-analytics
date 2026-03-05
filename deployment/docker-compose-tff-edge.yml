@@ -1,0 +1,43 @@
+services:
+  silo_healthcare_edge:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_healthcare_edge
+    environment:
+      - NODE_ID=Silo_Healthcare_Edge
+      - DOMAIN=Healthcare
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-192.168.1.100}:5000
+      - GRPC_PORT=8000
+    networks:
+      - edge_net
+
+  silo_finance_edge:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_finance_edge
+    environment:
+      - NODE_ID=Silo_Finance_Edge
+      - DOMAIN=Finance
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-192.168.1.100}:5000
+      - GRPC_PORT=8000
+    networks:
+      - edge_net
+
+  silo_retail_edge:
+    build:
+      context: ..
+      dockerfile: silo-node/Dockerfile
+    container_name: tff_silo_retail_edge
+    environment:
+      - NODE_ID=Silo_Retail_Edge
+      - DOMAIN=Retail
+      - COORDINATOR_URL=http://${COORDINATOR_IP:-192.168.1.100}:5000
+      - GRPC_PORT=8000
+    networks:
+      - edge_net
+
+networks:
+  edge_net:
+    driver: bridge

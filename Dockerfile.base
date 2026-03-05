@@ -1,0 +1,6 @@
+FROM python:3.10-slim
+
+# Install TFF + its full tensorflow dependency in ONE image.
+# This image is built ONCE and shared by coordinator + silo-node,
+# so the 490MB tensorflow wheel is only downloaded a single time.
+RUN pip install --no-cache-dir --retries 5 --timeout 600 tensorflow==2.13.0 tensorflow-federated==0.54.0

@@ -1,124 +1,108 @@
-from __future__ import annotations
-
 import os
 import time
-import json
-from typing import List
-import numpy as np
 import requests
+import socket
+import grpc
+from concurrent import futures
+import tensorflow as tf
+import tensorflow_federated as tff
 
-from common.cryptography import (
-    DPConfig,
-    apply_dp,
-    secure_mask_update,
-    to_jsonable,
-)
+NODE_ID = os.getenv("NODE_ID", "Silo_X")
+DOMAIN = os.getenv("DOMAIN", "Healthcare")
+COORDINATOR_URL = os.getenv("COORDINATOR_URL", "http://coordinator:5000")
+GRPC_PORT = int(os.getenv("GRPC_PORT", "8000"))
 
-NODE_ID = os.getenv("NODE_ID", "SILO_1")
-COORDINATOR_URL = os.getenv("COORDINATOR_URL", "http://coordinator:8000")
-ROUND = int(os.getenv("ROUND", "1"))
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
-# Comma-separated peer node IDs (must match compose)
-PEERS = [
-    x.strip()
-    for x in os.getenv("PEERS", "SILO_1,SILO_2,SILO_3").split(",")
-    if x.strip()
-]
-
-SHARED_SECRET = os.getenv("SHARED_SECRET", "class-demo-secret")
-
-UPDATE_DIM = int(os.getenv("UPDATE_DIM", "20"))
-
-DP_ENABLED = os.getenv("DP_ENABLED", "true").lower() in ("1", "true", "yes")
-DP_L2_CLIP = float(os.getenv("DP_L2_CLIP", "1.0"))
-DP_NOISE_MULT = float(os.getenv("DP_NOISE_MULT", "0.3"))
-DP_SEED = int(os.getenv("DP_SEED", "12345")) + (
-    abs(hash(NODE_ID)) % 10000
-)  # node-specific seed
-
-
-def simulate_local_update(node_id: str, dim: int) -> np.ndarray:
-    """Create a deterministic 'local update' vector.
-    Replace this with real TFF client updates later.
-    """
-    # Use a node-specific seed so each silo generates different local update
-    seed = abs(hash(node_id)) % (2**32 - 1)
-    rng = np.random.default_rng(seed)
-    return rng.normal(0.0, 1.0, size=(dim,)).astype(np.float32)
-
-
-def main():
-    print(
-        f"[{NODE_ID}] Starting silo client. Coordinator={COORDINATOR_URL} Round={ROUND}"
-    )
-    cfg = DPConfig(
-        enabled=DP_ENABLED,
-        l2_clip=DP_L2_CLIP,
-        noise_multiplier=DP_NOISE_MULT,
-        seed=DP_SEED,
-    )
-
-    # 0) Initial Handshake with Coordinator (5-second retry loop)
+def register_with_coordinator(grpc_address):
     health_url = f"{COORDINATOR_URL}/health"
-    print(f"[{NODE_ID}] Attempting initial handshake with Coordinator at {health_url}")
+    print(f"[{NODE_ID}] Attempting initial handshake with Coordinator at {health_url}", flush=True)
+    
     connected = False
-    for attempt in range(1, 13): # 12 attempts * 5 seconds = 60 seconds max wait
+    for attempt in range(1, 13): 
         try:
             r = requests.get(health_url, timeout=5)
             if r.status_code == 200:
-                print(f"[{NODE_ID}] Handshake successful! Coordinator is ready.")
+                print(f"[{NODE_ID}] Handshake successful! Coordinator is ready.", flush=True)
                 connected = True
                 break
             else:
-                print(f"[{NODE_ID}] Coordinator returned status {r.status_code}. Retrying in 5 seconds...")
+                print(f"[{NODE_ID}] Coordinator returned status {r.status_code}. Retrying in 5 seconds...", flush=True)
         except requests.exceptions.RequestException as e:
-            print(f"[{NODE_ID}] Handshake attempt {attempt} failed: {e}. Retrying in 5 seconds...")
-        
+            print(f"[{NODE_ID}] Handshake attempt {attempt} failed. Retrying in 5 seconds...", flush=True)
         time.sleep(5.0)
 
-    if not connected:
-        print(f"[{NODE_ID}] Could not connect to Coordinator after multiple attempts. Proceeding anyway, but may fail.")
-
-    # 1) Local compute (toy)
-    local_update = simulate_local_update(NODE_ID, UPDATE_DIM)
-    dp_update = apply_dp(local_update, cfg)
-
-    # 2) Secure aggregation masking
-    peer_ids = [p for p in PEERS if p != NODE_ID]
-    masked = secure_mask_update(dp_update, NODE_ID, peer_ids, SHARED_SECRET)
-
-    # 3) Send to coordinator
+    # Send registration
+    url = f"{COORDINATOR_URL}/register"
     payload = {
         "node_id": NODE_ID,
-        "round": ROUND,
-        "masked_update": to_jsonable(masked),
+        "domain": DOMAIN,
+        "grpc_address": grpc_address
     }
-
-    url = f"{COORDINATOR_URL}/submit_update"
-    for attempt in range(1, 21):
+    
+    for attempt in range(1, 6):
         try:
             r = requests.post(url, json=payload, timeout=5)
-            print(f"[{NODE_ID}] submit_update -> {r.status_code} {r.text}")
+            print(f"[{NODE_ID}] Registration -> {r.status_code} {r.text}", flush=True)
             break
         except Exception as e:
-            print(f"[{NODE_ID}] submit_update attempt {attempt} failed: {e}")
-            time.sleep(1.0)
+            print(f"[{NODE_ID}] Registration failed: {e}", flush=True)
+            time.sleep(2.0)
 
-    # Optional: poll aggregate
-    agg_url = f"{COORDINATOR_URL}/aggregate?round={ROUND}"
-    for _ in range(20):
+def main():
+    print(f"[{NODE_ID}] Starting TFF gRPC Worker on domain '{DOMAIN}'...", flush=True)
+    
+    local_ip = get_local_ip()
+    grpc_address = f"{local_ip}:{GRPC_PORT}"
+    
+    # Register in the background while gRPC spins up
+    import threading
+    threading.Thread(target=register_with_coordinator, args=(grpc_address,), daemon=True).start()
+
+    print(f"[{NODE_ID}] Binding TFF worker to port {GRPC_PORT}...", flush=True)
+    
+    # 1. Provide an Execution Context
+    # TFF provides an ExecutorService to wrap an executor factory over gRPC.
+    # To keep it robust across TFF versions, we use the `run_server` helper from tff.simulation
+    try:
+        # Standard API for recent TFF versions
+        executor_factory = tff.framework.local_executor_factory()
+        
+        # We need the service class. Wait, in modern TFF `run_server` handles this:
+        server = tff.simulation.run_server(executor_factory, 10, GRPC_PORT, None, None)
+        print(f"[{NODE_ID}] TFF ExecutorService running on port {GRPC_PORT}. Waiting for Coordinator tasks...", flush=True)
+        server.wait_for_termination()
+    except Exception as e1:
+        print(f"[{NODE_ID}] run_server failed, attempting native executor service: {e1}", flush=True)
         try:
-            g = requests.get(agg_url, timeout=5)
-            print(
-                f"[{NODE_ID}] aggregate -> {g.status_code} {g.text[:200]}..."
-            )
-            if g.status_code == 200:
-                data = g.json()
-                if data.get("status") == "ready":
-                    break
-        except Exception as e:
-            print(f"[{NODE_ID}] aggregate poll error: {e}")
-        time.sleep(1.0)
+            from tensorflow_federated.python.core.impl.executors import executor_service
+            from tensorflow_federated.python.core.impl.executors import sequence_executor
+            from tensorflow_federated.python.core.impl.executors import reference_resolving_executor
+            from tensorflow_federated.python.core.impl.executors import eager_tf_executor
+
+            leaf = eager_tf_executor.EagerTFExecutor()
+            seq = sequence_executor.SequenceExecutor(leaf)
+            ref = reference_resolving_executor.ReferenceResolvingExecutor(seq)
+            
+            ex_service = executor_service.ExecutorService(ref)
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+            from tensorflow_federated.proto.v0 import executor_pb2_grpc
+            executor_pb2_grpc.add_ExecutorGroupServicer_to_server(ex_service, server)
+            
+            server.add_insecure_port(f'[::]:{GRPC_PORT}')
+            server.start()
+            print(f"[{NODE_ID}] Native TFF ExecutorService running on port {GRPC_PORT}. Waiting for Coordinator tasks...", flush=True)
+            server.wait_for_termination()
+        except Exception as e2:
+            print(f"[{NODE_ID}] Native approach also failed: {e2}. Cannot start TFF Worker.", flush=True)
 
 
 if __name__ == "__main__":

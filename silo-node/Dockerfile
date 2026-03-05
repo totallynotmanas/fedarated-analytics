@@ -1,10 +1,10 @@
-FROM python:3.11-slim
+FROM tff-base:latest
 ENV PYTHONPATH=/app
 
 WORKDIR /app
 COPY . /app
 
-RUN pip install --no-cache-dir numpy requests
+# Only install lightweight silo-specific packages
+RUN pip install --no-cache-dir requests grpcio
 
-ENV PYTHONPATH=/app
 CMD ["python", "silo-node/client-logic.py"]

@@ -1,0 +1,5 @@
+numpy==1.24.3
+requests==2.31.0
+tensorflow==2.13.0
+tensorflow-federated==0.54.0
+grpcio==1.59.3
