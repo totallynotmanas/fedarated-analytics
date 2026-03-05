@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# OS detection for Python executable
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] || grep -q -i "microsoft" /proc/version 2>/dev/null; then
+    # Windows native or Git Bash or WSL
+    PYTHON_CMD="python.exe"
+else
+    # macOS or Native Linux
+    PYTHON_CMD="python3"
+fi
+
 # Cleanup background processes on exit (Ctrl+C)
 trap "kill 0" SIGINT SIGTERM EXIT
 
@@ -25,25 +34,25 @@ echo ""
 # --- START RETAIL SILOS ---
 echo "Starting 3 Retail Silos..."
 
-python.exe lite_silo.py --node_id "Silo_Retail_1" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Retail_1" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
 sleep 1
 
-python.exe lite_silo.py --node_id "Silo_Retail_2" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Retail_2" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
 sleep 1
 
-python.exe lite_silo.py --node_id "Silo_Retail_3" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Retail_3" --domain "Retail" --coordinator_url "$COORDINATOR_URL" &
 sleep 2
 
 # --- START HEALTHCARE SILOS ---
 echo "Starting 3 Healthcare Silos..."
 
-python.exe lite_silo.py --node_id "Silo_Healthcare_1" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Healthcare_1" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
 sleep 1
 
-python.exe lite_silo.py --node_id "Silo_Healthcare_2" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Healthcare_2" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
 sleep 1
 
-python.exe lite_silo.py --node_id "Silo_Healthcare_3" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Healthcare_3" --domain "Healthcare" --coordinator_url "$COORDINATOR_URL" &
 
 echo ""
 echo "All 6 Edge Silos started in the background! They should now be contacting the Hub."

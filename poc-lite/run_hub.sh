@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# OS detection for Python executable
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]] || grep -q -i "microsoft" /proc/version 2>/dev/null; then
+    # Windows native or Git Bash or WSL
+    PYTHON_CMD="python.exe"
+else
+    # macOS or Native Linux
+    PYTHON_CMD="python3"
+fi
+
 # Cleanup background processes on exit (Ctrl+C)
 trap "kill 0" SIGINT SIGTERM EXIT
 
@@ -26,11 +35,11 @@ echo ""
 
 echo "1. Starting Coordinator on port 5000..."
 export EXPECTED_NODES=7
-python.exe lite_coordinator.py &
+$PYTHON_CMD lite_coordinator.py &
 sleep 3
 
 echo "2. Starting Local Silo (Finance)..."
-python.exe lite_silo.py --node_id "Silo_Finance_Hub" --domain "Finance" --coordinator_url "http://localhost:5000" &
+$PYTHON_CMD lite_silo.py --node_id "Silo_Finance_Hub" --domain "Finance" --coordinator_url "http://localhost:5000" &
 
 echo ""
 echo "Hub processes started in the background!"
